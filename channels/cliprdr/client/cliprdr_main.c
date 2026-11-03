@@ -81,6 +81,14 @@ static UINT cliprdr_packet_send(cliprdrPlugin* cliprdr, wStream* s)
 
 	if (!cliprdr)
 		status = CHANNEL_RC_BAD_INIT_HANDLE;
+	else if (cliprdr->OpenHandle == 0)
+	{
+		/* CHANNEL_EVENT_DISCONNECTED already closed the channel and zeroed
+		 * OpenHandle, but another thread (e.g. the X11 clipboard-owner poll
+		 * during auto-reconnect) can still have a send in flight. Fail
+		 * cleanly instead of handing a stale handle to pVirtualChannelWriteEx. */
+		status = CHANNEL_RC_BAD_CHANNEL_HANDLE;
+	}
 	else
 	{
 		WINPR_ASSERT(cliprdr->channelEntryPoints.pVirtualChannelWriteEx);
